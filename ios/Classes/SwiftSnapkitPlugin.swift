@@ -20,13 +20,43 @@ public class SwiftSnapkitPlugin: NSObject, FlutterPlugin {
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "callLogin":
-            SCSDKLoginClient.login(from: (UIApplication.shared.keyWindow?.rootViewController)!) { (success: Bool, error: Error?) in
-                if (!success) {
-                    result(FlutterError(code: "LoginError", message: error.debugDescription, details: error.debugDescription))
+            print("SnapkitPlugin: Starting login process...")
+            
+            // Check if we have a valid root view controller
+            guard let rootViewController = UIApplication.shared.keyWindow?.rootViewController else {
+                print("SnapkitPlugin: ERROR - No root view controller found")
+                result(FlutterError(code: "LoginError", message: "No root view controller available", details: "UIApplication.shared.keyWindow?.rootViewController is nil"))
+                break
+            }
+            
+            print("SnapkitPlugin: Root view controller found: \(type(of: rootViewController))")
+            
+            SCSDKLoginClient.login(from: rootViewController) { (success: Bool, error: Error?) in
+                print("SnapkitPlugin: Login completion called - success: \(success)")
+                
+                if let error = error {
+                    print("SnapkitPlugin: Login failed with error: \(error)")
+                    print("SnapkitPlugin: Error description: \(error.localizedDescription)")
+                    print("SnapkitPlugin: Error debug description: \(error.debugDescription)")
+                    
+                    result(FlutterError(
+                        code: "LoginError", 
+                        message: "Login failed: \(error.localizedDescription)", 
+                        details: error.debugDescription
+                    ))
+                } else if !success {
+                    print("SnapkitPlugin: Login failed but no error provided")
+                    result(FlutterError(
+                        code: "LoginError", 
+                        message: "Login failed without specific error", 
+                        details: "Success was false but no error object was provided"
+                    ))
                 } else {
+                    print("SnapkitPlugin: Login successful!")
                     result("Login Success")
                 }
             }
+            break
         case "getUser":
             let query = "{me{externalId, displayName, bitmoji{selfie}}}"
             let variables = ["page": "bitmoji"]
@@ -53,9 +83,11 @@ public class SwiftSnapkitPlugin: NSObject, FlutterPlugin {
                     result(FlutterError(code: "UnknownGetUserError", message: "Unknown", details: nil))
                 }
             })
+            break
         case "callLogout":
             SCSDKLoginClient.clearToken()
             result("Logout Success")
+            break
         case "verifyNumber":
             guard let arguments = call.arguments,
                   let args = arguments as? [String: Any] else { return }
@@ -70,6 +102,7 @@ public class SwiftSnapkitPlugin: NSObject, FlutterPlugin {
                 
                 result([phoneId, verifyId])
             }
+            break
         case "sendMedia":
             guard let arguments = call.arguments,
                   let args = arguments as? [String: Any] else { return }
@@ -144,14 +177,18 @@ public class SwiftSnapkitPlugin: NSObject, FlutterPlugin {
                     result("SendMedia Success")
                 }
             })
+            break
         case "isInstalled":
             let appScheme = "snapchat://app"
             let appUrl = URL(string: appScheme)
             result(UIApplication.shared.canOpenURL(appUrl! as URL))
+            break
         case "getPlatformVersion":
             result("iOS " + UIDevice.current.systemVersion)
+            break
         default:
             result(FlutterMethodNotImplemented)
+            break
         }
     }
 }
