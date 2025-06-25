@@ -37,12 +37,12 @@ public class SwiftSnapkitPlugin: NSObject, FlutterPlugin {
                 if let error = error {
                     print("SnapkitPlugin: Login failed with error: \(error)")
                     print("SnapkitPlugin: Error description: \(error.localizedDescription)")
-                    print("SnapkitPlugin: Error debug description: \(error.debugDescription)")
+                    print("SnapkitPlugin: Error debug description: \(String(describing: error))")
                     
                     result(FlutterError(
                         code: "LoginError", 
                         message: "Login failed: \(error.localizedDescription)", 
-                        details: error.debugDescription
+                        details: String(describing: error)
                     ))
                 } else if !success {
                     print("SnapkitPlugin: Login failed but no error provided")
@@ -78,7 +78,7 @@ public class SwiftSnapkitPlugin: NSObject, FlutterPlugin {
                 if (isUserLoggedOut) {
                     result(FlutterError(code: "GetUserError", message: "User Not Logged In", details: nil))
                 } else if (error != nil) {
-                    result(FlutterError(code: "GetUserError", message: error.debugDescription, details: nil))
+                    result(FlutterError(code: "GetUserError", message: String(describing: error), details: nil))
                 } else {
                     result(FlutterError(code: "UnknownGetUserError", message: "Unknown", details: nil))
                 }
@@ -172,7 +172,7 @@ public class SwiftSnapkitPlugin: NSObject, FlutterPlugin {
             
             self._snapApi?.startSending(content!, completionHandler: { (error: Error?) in
                 if (error != nil) {
-                    result(FlutterError(code: "SendMediaSendError", message: error.debugDescription, details: nil))
+                    result(FlutterError(code: "SendMediaSendError", message: String(describing: error), details: nil))
                 } else {
                     result("SendMedia Success")
                 }
