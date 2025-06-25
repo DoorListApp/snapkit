@@ -26,34 +26,36 @@ public class SwiftSnapkitPlugin: NSObject, FlutterPlugin {
             guard let rootViewController = UIApplication.shared.keyWindow?.rootViewController else {
                 print("SnapkitPlugin: ERROR - No root view controller found")
                 result(FlutterError(code: "LoginError", message: "No root view controller available", details: "UIApplication.shared.keyWindow?.rootViewController is nil"))
-                break
+                return
             }
             
             print("SnapkitPlugin: Root view controller found: \(type(of: rootViewController))")
             
-            SCSDKLoginClient.login(from: rootViewController) { (success: Bool, error: Error?) in
-                print("SnapkitPlugin: Login completion called - success: \(success)")
-                
-                if let error = error {
-                    print("SnapkitPlugin: Login failed with error: \(error)")
-                    print("SnapkitPlugin: Error description: \(error.localizedDescription)")
-                    print("SnapkitPlugin: Error debug description: \(String(describing: error))")
+            SCSDKLoginClient.login(from: rootViewController) { [weak self] (success: Bool, error: Error?) in
+                DispatchQueue.main.async {
+                    print("SnapkitPlugin: Login completion called - success: \(success)")
                     
-                    result(FlutterError(
-                        code: "LoginError", 
-                        message: "Login failed: \(error.localizedDescription)", 
-                        details: String(describing: error)
-                    ))
-                } else if !success {
-                    print("SnapkitPlugin: Login failed but no error provided")
-                    result(FlutterError(
-                        code: "LoginError", 
-                        message: "Login failed without specific error", 
-                        details: "Success was false but no error object was provided"
-                    ))
-                } else {
-                    print("SnapkitPlugin: Login successful!")
-                    result("Login Success")
+                    if let error = error {
+                        print("SnapkitPlugin: Login failed with error: \(error)")
+                        print("SnapkitPlugin: Error description: \(error.localizedDescription)")
+                        print("SnapkitPlugin: Error debug description: \(String(describing: error))")
+                        
+                        result(FlutterError(
+                            code: "LoginError", 
+                            message: "Login failed: \(error.localizedDescription)", 
+                            details: String(describing: error)
+                        ))
+                    } else if !success {
+                        print("SnapkitPlugin: Login failed but no error provided")
+                        result(FlutterError(
+                            code: "LoginError", 
+                            message: "Login failed without specific error", 
+                            details: "Success was false but no error object was provided"
+                        ))
+                    } else {
+                        print("SnapkitPlugin: Login successful!")
+                        result("Login Success")
+                    }
                 }
             }
             break
@@ -64,13 +66,16 @@ public class SwiftSnapkitPlugin: NSObject, FlutterPlugin {
             SCSDKLoginClient.fetchUserData(withQuery: query, variables: variables, success: { (resources: [AnyHashable: Any]?) in
                 guard let resources = resources,
                       let data = resources["data"] as? [String: Any],
-                      let me = data["me"] as? [String: Any] else { return }
+                      let me = data["me"] as? [String: Any] else { 
+                    result(FlutterError(code: "GetUserError", message: "Failed to parse user data", details: nil))
+                    return 
+                }
                 
-                let externalId = me["externalId"] as? String
-                let displayName = me["displayName"] as? String
-                var bitmojiAvatarUrl: String?
+                let externalId = me["externalId"] as? String ?? ""
+                let displayName = me["displayName"] as? String ?? ""
+                var bitmojiAvatarUrl: String = ""
                 if let bitmoji = me["bitmoji"] as? [String: Any] {
-                    bitmojiAvatarUrl = bitmoji["selfie"] as? String
+                    bitmojiAvatarUrl = bitmoji["selfie"] as? String ?? ""
                 }
                 
                 result([externalId, displayName, bitmojiAvatarUrl])
